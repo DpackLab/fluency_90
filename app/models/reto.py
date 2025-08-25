@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class Reto(Base):
     __tablename__ = "retos"
 
@@ -14,4 +15,6 @@ class Reto(Base):
     # Si ya existe la columna, no tocar; si no existe y la quieres, la añadimos luego con migración.
     # idioma_id = Column(Integer, ForeignKey("idiomas.id"), nullable=True)
     activo = Column(Boolean, nullable=False, server_default="true")
-    creado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    creado_en = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

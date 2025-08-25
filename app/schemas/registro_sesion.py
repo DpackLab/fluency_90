@@ -3,9 +3,11 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+
 class RegistroSesionCreate(BaseModel):
     inicio: datetime
     fin: Optional[datetime] = None
+
 
 class RegistroSesionResponse(BaseModel):
     id: int

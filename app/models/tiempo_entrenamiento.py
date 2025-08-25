@@ -7,6 +7,7 @@ from sqlalchemy import Column, Integer, Date, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class TiempoEntrenamiento(Base):
     __tablename__ = "tiempos_entrenamiento"
 
@@ -14,4 +15,6 @@ class TiempoEntrenamiento(Base):
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     fecha = Column(Date, nullable=False)
     minutos = Column(Integer, nullable=False)  # total minutos del día
-    creado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    creado_en = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

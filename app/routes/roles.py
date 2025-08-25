@@ -8,11 +8,14 @@ from app.auth.permissions import require_admin
 from app.models.rol import Rol
 from app.models.usuario_rol import UsuarioRol
 from app.schemas.rol_schema import (
-    RolCreate, RolResponse,
-    UsuarioRolCreate, UsuarioRolResponse,
+    RolCreate,
+    RolResponse,
+    UsuarioRolCreate,
+    UsuarioRolResponse,
 )
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
+
 
 @router.post("/", response_model=RolResponse)
 def crear_rol(
@@ -26,12 +29,14 @@ def crear_rol(
     db.refresh(rol)
     return rol
 
+
 @router.get("/", response_model=list[RolResponse])
 def listar_roles(
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
     return db.query(Rol).all()
+
 
 @router.post("/asignar", response_model=UsuarioRolResponse)
 def asignar_rol(

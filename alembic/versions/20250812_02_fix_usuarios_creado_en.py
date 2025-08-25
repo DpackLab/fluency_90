@@ -6,6 +6,7 @@ down_revision = "1ed087ba71b1"
 branch_labels = None
 depends_on = None
 
+
 def upgrade():
     bind = op.get_bind()
     insp = sa.inspect(bind)
@@ -18,6 +19,7 @@ def upgrade():
             existing_nullable=False,
             server_default=sa.text("NOW()"),
         )
+
 
 def downgrade():
     bind = op.get_bind()

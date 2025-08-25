@@ -14,6 +14,7 @@ from app.schemas.registro_sesion import (
 
 router = APIRouter(prefix="/registro-sesiones", tags=["Métricas: sesiones"])
 
+
 @router.post("/", response_model=RegistroSesionResponse)
 def crear_registro_sesion(
     payload: RegistroSesionCreate,
@@ -29,6 +30,7 @@ def crear_registro_sesion(
     db.commit()
     db.refresh(registro)
     return registro
+
 
 @router.get("/", response_model=list[RegistroSesionResponse])
 def listar_registros(

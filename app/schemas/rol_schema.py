@@ -3,9 +3,11 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
 class RolCreate(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
+
 
 class RolResponse(BaseModel):
     id: int
@@ -15,9 +17,11 @@ class RolResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
 class UsuarioRolCreate(BaseModel):
     usuario_id: int
     rol_id: int
+
 
 class UsuarioRolResponse(BaseModel):
     id: int

@@ -22,7 +22,9 @@ def upgrade():
             sa.Column("titulo", sa.String(length=100), nullable=False),
             sa.Column("descripcion", sa.Text, nullable=True),
             sa.Column("dificultad", sa.String(length=50), nullable=True),
-            sa.Column("idioma_id", sa.Integer, sa.ForeignKey("idiomas.id"), nullable=False),
+            sa.Column(
+                "idioma_id", sa.Integer, sa.ForeignKey("idiomas.id"), nullable=False
+            ),
             sa.Column(
                 "creado_en",
                 sa.DateTime(timezone=True),

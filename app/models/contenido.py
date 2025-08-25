@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from app.database import Base
 
+
 class Contenido(Base):
     __tablename__ = "contenidos"
 

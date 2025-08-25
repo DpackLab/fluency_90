@@ -10,6 +10,7 @@ router = APIRouter(prefix="/ejercicios", tags=["Ejercicios"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UsuarioTokenData:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -23,7 +24,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> UsuarioTokenData:
 def crear_usuario(
     usuario: UsuarioSchema,
     db: Session = Depends(get_db),
-    current_user: UsuarioTokenData = Depends(get_current_user)
+    current_user: UsuarioTokenData = Depends(get_current_user),
 ):
     db_usuario = Usuario(nombre=usuario.nombre, correo=usuario.correo)
     db.add(db_usuario)

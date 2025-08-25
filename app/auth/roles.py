@@ -1,5 +1,5 @@
 # app/auth/roles.py
-from typing import Callable, Iterable
+from typing import Callable
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session

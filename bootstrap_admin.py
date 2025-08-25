@@ -1,6 +1,5 @@
 # bootstrap_admin.py
 import os
-import sys
 import argparse
 import secrets
 import string
@@ -21,7 +20,9 @@ def _create_or_get_admin(db, email: str, password: str, lang_code: str):
     if not lang:
         nombre = "Inglés" if lang_code == "en" else lang_code.upper()
         lang = Idioma(nombre=nombre, codigo_iso=lang_code, descripcion=None)
-        db.add(lang); db.commit(); db.refresh(lang)
+        db.add(lang)
+        db.commit()
+        db.refresh(lang)
 
     # 2) Usuario admin
     user = db.query(Usuario).filter_by(email=email).first()
@@ -34,25 +35,36 @@ def _create_or_get_admin(db, email: str, password: str, lang_code: str):
             nivel_inicial="A2",
             idioma_id=lang.id,
         )
-        db.add(user); db.commit(); db.refresh(user)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     # 3) Rol admin
     role = db.query(Rol).filter_by(nombre="admin").first()
     if not role:
         role = Rol(nombre="admin", descripcion="Superusuario")
-        db.add(role); db.commit(); db.refresh(role)
+        db.add(role)
+        db.commit()
+        db.refresh(role)
 
     # 4) Asignación rol→usuario
     link = db.query(UsuarioRol).filter_by(usuario_id=user.id, rol_id=role.id).first()
     if not link:
-        db.add(UsuarioRol(usuario_id=user.id, rol_id=role.id)); db.commit()
+        db.add(UsuarioRol(usuario_id=user.id, rol_id=role.id))
+        db.commit()
 
     return user, role
 
 
 def main(run_flag: bool, email: str, password: str | None, lang_code: str):
     # 🔒 Deshabilitado por defecto
-    allowed = run_flag or os.getenv("BOOTSTRAP_ADMIN", "0") in ("1", "true", "True", "yes", "YES")
+    allowed = run_flag or os.getenv("BOOTSTRAP_ADMIN", "0") in (
+        "1",
+        "true",
+        "True",
+        "yes",
+        "YES",
+    )
     if not allowed:
         print(
             "🔒 Bootstrap deshabilitado. Para ejecutarlo usa:\n"
@@ -69,7 +81,9 @@ def main(run_flag: bool, email: str, password: str | None, lang_code: str):
 
     db = SessionLocal()
     try:
-        user, role = _create_or_get_admin(db, email=email, password=password, lang_code=lang_code)
+        user, role = _create_or_get_admin(
+            db, email=email, password=password, lang_code=lang_code
+        )
         print("\n✅ Admin creado o verificado:")
         print(f"   email:    {user.email}")
         msg = "   password: " + password
@@ -84,14 +98,27 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Crea/verifica un usuario admin. DESHABILITADO por defecto."
     )
-    parser.add_argument("--run", action="store_true", help="Ejecutar realmente el bootstrap (override del bloqueo).")
-    parser.add_argument("--email", default=os.getenv("BOOTSTRAP_ADMIN_EMAIL", "admin@example.com"))
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="Ejecutar realmente el bootstrap (override del bloqueo).",
+    )
+    parser.add_argument(
+        "--email", default=os.getenv("BOOTSTRAP_ADMIN_EMAIL", "admin@example.com")
+    )
     parser.add_argument(
         "--password",
         default=os.getenv("BOOTSTRAP_ADMIN_PASSWORD"),
-        help="Si no se especifica, se genera una aleatoria segura."
+        help="Si no se especifica, se genera una aleatoria segura.",
     )
-    parser.add_argument("--lang", dest="lang_code", default=os.getenv("BOOTSTRAP_LANG", "en"))
+    parser.add_argument(
+        "--lang", dest="lang_code", default=os.getenv("BOOTSTRAP_LANG", "en")
+    )
     args = parser.parse_args()
 
-    main(run_flag=args.run, email=args.email, password=args.password, lang_code=args.lang_code)
+    main(
+        run_flag=args.run,
+        email=args.email,
+        password=args.password,
+        lang_code=args.lang_code,
+    )

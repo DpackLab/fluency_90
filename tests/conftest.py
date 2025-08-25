@@ -1,5 +1,4 @@
 # tests/conftest.py
-import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -14,8 +13,11 @@ from app import models  # noqa: F401
 
 # Un SQLite de archivo (mismo proceso/hilo lo ve todo)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./_test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def create_db():
@@ -25,6 +27,7 @@ def create_db():
     yield
     Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture
 def session():
     db = TestingSessionLocal()
@@ -33,6 +36,7 @@ def session():
         db.commit()
     finally:
         db.close()
+
 
 @pytest.fixture
 def client(session):

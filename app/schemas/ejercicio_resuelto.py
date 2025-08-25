@@ -3,12 +3,14 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
+
 class EjercicioResueltoCreate(BaseModel):
     reto_id: Optional[int] = None
     tipo: Optional[str] = Field(None, example="shadowing")
     wpm: Optional[float] = None
     comprension_pct: Optional[float] = Field(None, ge=0, le=100)
     errores_por_min: Optional[float] = Field(None, ge=0)
+
 
 class EjercicioResueltoResponse(BaseModel):
     id: int

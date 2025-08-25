@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 # Para la protección JWT
-from app.schemas.usuario_schema import UsuarioTokenData
+
 
 # Esquema base para entrada de datos (POST)
 class RetoCreate(BaseModel):
@@ -11,6 +11,7 @@ class RetoCreate(BaseModel):
     descripcion: Optional[str] = Field(None, example="Practica palabras básicas")
     dificultad: Optional[str] = Field(None, example="Fácil")
     activo: Optional[bool] = Field(default=True)
+
 
 # Esquema de respuesta para salida de datos (GET)
 class RetoResponse(BaseModel):

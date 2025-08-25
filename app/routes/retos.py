@@ -11,6 +11,7 @@ from app.schemas.usuario_schema import UsuarioTokenData
 router = APIRouter(prefix="/retos", tags=["Retos"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UsuarioTokenData:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -19,11 +20,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> UsuarioTokenData:
     )
     return verificar_token(token, credentials_exception)
 
+
 @router.post("/", response_model=RetoResponse)
 def crear_reto(
     reto: RetoCreate,
     db: Session = Depends(get_db),
-    current_user: UsuarioTokenData = Depends(get_current_user)
+    current_user: UsuarioTokenData = Depends(get_current_user),
 ):
     nuevo = Reto(
         titulo=reto.titulo,
@@ -36,9 +38,10 @@ def crear_reto(
     db.refresh(nuevo)
     return nuevo
 
+
 @router.get("/", response_model=list[RetoResponse])
 def listar_retos(
     db: Session = Depends(get_db),
-    current_user: UsuarioTokenData = Depends(get_current_user)
+    current_user: UsuarioTokenData = Depends(get_current_user),
 ):
     return db.query(Reto).all()

@@ -14,6 +14,7 @@ from app.schemas.ejercicio_resuelto import (
 
 router = APIRouter(prefix="/ejercicios-resueltos", tags=["Métricas: ejercicios"])
 
+
 @router.post("/", response_model=EjercicioResueltoResponse)
 def crear_ejercicio_resuelto(
     payload: EjercicioResueltoCreate,
@@ -32,6 +33,7 @@ def crear_ejercicio_resuelto(
     db.commit()
     db.refresh(registro)
     return registro
+
 
 @router.get("/", response_model=list[EjercicioResueltoResponse])
 def listar_ejercicios_resueltos(

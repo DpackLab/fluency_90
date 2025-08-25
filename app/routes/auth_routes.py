@@ -13,8 +13,10 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
 
 def authenticate(db: Session, email: str, password: str) -> Usuario | None:
     user = db.query(Usuario).filter(Usuario.email == email).first()
@@ -23,6 +25,7 @@ def authenticate(db: Session, email: str, password: str) -> Usuario | None:
     if not verify_password(password, user.contrasena):
         return None
     return user
+
 
 @router.post("/token")
 @limiter.limit("10/minute")  # p.ej. 10 intentos/min por IP
@@ -41,6 +44,7 @@ def login_token(
 
     token = crear_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
 
 # Si tienes otros endpoints con @limiter.limit, TODOS deben incluir request: Request
 # Ejemplo:

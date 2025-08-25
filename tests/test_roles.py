@@ -48,7 +48,11 @@ def _ensure_admin_role(session) -> Rol:
 
 def _grant_admin(session, user: Usuario):
     role = _ensure_admin_role(session)
-    if not session.query(UsuarioRol).filter_by(usuario_id=user.id, rol_id=role.id).first():
+    if (
+        not session.query(UsuarioRol)
+        .filter_by(usuario_id=user.id, rol_id=role.id)
+        .first()
+    ):
         session.add(UsuarioRol(usuario_id=user.id, rol_id=role.id))
         session.commit()
     return role

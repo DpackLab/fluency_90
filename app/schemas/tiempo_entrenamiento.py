@@ -2,9 +2,11 @@
 from pydantic import BaseModel, Field
 from datetime import date, datetime
 
+
 class TiempoEntrenamientoCreate(BaseModel):
     fecha: date
     minutos: int = Field(..., ge=1, le=600)
+
 
 class TiempoEntrenamientoResponse(BaseModel):
     id: int

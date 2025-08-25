@@ -14,6 +14,7 @@ from app.schemas.tiempo_entrenamiento import (
 
 router = APIRouter(prefix="/tiempos-entrenamiento", tags=["Métricas: tiempo"])
 
+
 @router.post("/", response_model=TiempoEntrenamientoResponse)
 def crear_tiempo(
     payload: TiempoEntrenamientoCreate,
@@ -29,6 +30,7 @@ def crear_tiempo(
     db.commit()
     db.refresh(registro)
     return registro
+
 
 @router.get("/", response_model=list[TiempoEntrenamientoResponse])
 def listar_tiempos(

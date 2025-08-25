@@ -14,6 +14,7 @@ from app.schemas.contenido_diario import (
 
 router = APIRouter(prefix="/contenidos-diarios", tags=["Contenidos diarios"])
 
+
 @router.post("/", response_model=ContenidoDiarioResponse)
 def crear_contenido_diario(
     payload: ContenidoDiarioCreate,
@@ -31,6 +32,7 @@ def crear_contenido_diario(
     db.commit()
     db.refresh(registro)
     return registro
+
 
 @router.get("/", response_model=list[ContenidoDiarioResponse])
 def listar_contenidos_diarios(

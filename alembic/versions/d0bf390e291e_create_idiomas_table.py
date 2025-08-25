@@ -1,9 +1,10 @@
 """create idiomas table (root)"""
+
 from alembic import op
 import sqlalchemy as sa
 
 # === REVISION INFO ===
-revision = "base_idiomas"   # <— ID corto y claro
+revision = "base_idiomas"  # <— ID corto y claro
 down_revision = None
 branch_labels = None
 depends_on = None

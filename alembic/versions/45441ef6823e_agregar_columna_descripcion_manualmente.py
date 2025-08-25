@@ -1,10 +1,11 @@
 """agregar columna descripcion manualmente"""
+
 from alembic import op
 import sqlalchemy as sa
 
 # === REVISION INFO ===
 revision = "45441ef6823e"
-down_revision = "base_idiomas"   # <— aquí estaba el problema
+down_revision = "base_idiomas"  # <— aquí estaba el problema
 branch_labels = None
 depends_on = None
 

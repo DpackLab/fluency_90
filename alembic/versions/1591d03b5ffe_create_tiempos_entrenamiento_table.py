@@ -15,7 +15,9 @@ def upgrade() -> None:
     op.create_table(
         "tiempos_entrenamiento",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("usuario_id", sa.Integer, sa.ForeignKey("usuarios.id"), nullable=False),
+        sa.Column(
+            "usuario_id", sa.Integer, sa.ForeignKey("usuarios.id"), nullable=False
+        ),
         sa.Column("fecha", sa.Date, nullable=False),
         sa.Column("minutos", sa.Integer, nullable=False),
         sa.Column(
