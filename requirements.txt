@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+passlib[bcrypt]
+alembic
+pydantic
+
+
+#📌 Explicación de cada paquete:
+#Paquete	Descripción breve
+#fastapi	Framework principal para construir APIs rápidas y modernas
+#uvicorn[standard]	Servidor ASGI para ejecutar la app (--reload incluido)
+#sqlalchemy	ORM para conectar y manejar la base de datos
+#psycopg2-binary	Conector de PostgreSQL para SQLAlchemy
+#pydantic	Validación de datos y modelos para FastAPI
+#python-dotenv	Para cargar variables de entorno desde un archivo .env (opcional, pero útil para ocultar la contraseña de la DB)
