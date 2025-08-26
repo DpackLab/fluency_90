@@ -35,3 +35,14 @@ test.db
 *.sqlite
 *.sqlite3
 *.db
+
+# Proyectos locales (no versionar)
+Projects/
+
+# --- Big binaries / installers (no versionar) ---
+DevTools/
+*.exe
+*.msi
+*.zip
+*.7z
+*.iso
