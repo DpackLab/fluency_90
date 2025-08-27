@@ -33,7 +33,7 @@ jobs:
       ALLOW_ORIGINS: http://localhost:5173,https://tu-front.com
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # necesario para gitleaks si escaneas historia
 
@@ -92,7 +92,7 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # para que Gitleaks pueda revisar historia si lo deseas
 
