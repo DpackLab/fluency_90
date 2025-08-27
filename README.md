@@ -285,4 +285,4 @@ uvicorn app.main:app --reload
 14. Licencia y uso
 
      Proyecto interno de Dpack Software Labs para fines de entrenamiento.
-     No distribuible públicamente sin autorización expresa.
+     No distribuible públicamente sin autorización expresa.""    # a�ade una l�nea en blanco, por ejemplo
