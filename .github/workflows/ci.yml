@@ -1,24 +1,31 @@
 name: CI
+
 on:
   push:
-    branches: ['**']
+    branches: ['*']
   pull_request:
-    branches: ['**']
+    branches: ['*']
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   security:
     name: Security (SCA + SAST + Secrets)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
 
       - name: Install linters/scanners
         run: |
@@ -33,6 +40,8 @@ jobs:
 
       - name: Gitleaks (secrets)
         uses: zricethezav/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: detect --redact --source=.
 
@@ -40,15 +49,6 @@ jobs:
     name: Tests (Postgres + Alembic + PyTest)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
-    # 🌐 Variables del job (disponibles en todos los steps)
-    env:
-      PYTHONPATH: ${{ github.workspace }}
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fluency90_test
-      SECRET_KEY: test_secret_please_change
-      ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: '30'
-      ALLOW_ORIGINS: http://localhost:5173,https://tu-front.com
 
     services:
       postgres:
@@ -63,13 +63,21 @@ jobs:
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fluency90_test
+      SECRET_KEY: test_secret_please_change
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      ALLOW_ORIGINS: http://localhost:5173,https://tu-front.com
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -96,14 +104,18 @@ jobs:
 
       - name: Wait for Postgres
         run: |
-          for i in {1..60}; do
+          for i in {1..30}; do
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 1
           done
-          psql -h localhost -p 5432 -U postgres -c "SELECT 1;" || exit 1
+          psql -h localhost -p 5432 -U postgres -c "SELECT 1;"
 
       - name: Run Alembic migrations
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: alembic upgrade head
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
