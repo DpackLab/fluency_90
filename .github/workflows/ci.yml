@@ -1,47 +1,29 @@
-name: CI
-
-on:
-  push:
-    branches: ['*']
-  pull_request:
-    branches: ['*']
+name: CI 
+on: [push, pull_request]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   security:
     name: Security (SCA + SAST + Secrets)
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
+        with: {python-version: "3.11"}
       - name: Install linters/scanners
         run: |
           python -m pip install --upgrade pip
           pip install ruff bandit
-
       - name: Ruff (lint)
         run: ruff check .
-
       - name: Bandit (SAST)
         run: bandit -r -q app -x venv,tests,alembic/versions
-
       - name: Gitleaks (secrets)
         uses: zricethezav/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: detect --redact --source=.
 
@@ -74,10 +56,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        with: {python-version: "3.11"}
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -108,14 +88,12 @@ jobs:
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 1
           done
-          psql -h localhost -p 5432 -U postgres -c "SELECT 1;"
+          psql "postgresql://postgres:postgres@localhost:5432/fluency90_test" -c "SELECT 1;"
 
       - name: Run Alembic migrations
-        env:
-          PYTHONPATH: ${{ github.workspace }}
+        env: { PYTHONPATH: . }
         run: alembic upgrade head
 
       - name: Run tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
+        env: { PYTHONPATH: . }
         run: pytest -q
