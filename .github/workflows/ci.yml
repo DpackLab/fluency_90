@@ -113,10 +113,10 @@ jobs:
             sleep 1
           done
 
-      - name: Run Alembic migrations
+      - name: Run Alembic migrations (all branches)
         env:
           PYTHONPATH: .
-        run: alembic upgrade head
+        run: alembic upgrade heads
 
       - name: Run tests
         env:
