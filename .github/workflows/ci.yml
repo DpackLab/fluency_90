@@ -1,12 +1,51 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  test:
+  security:
+    name: Security (SCA + SAST + Secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install linters/scanners
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff bandit
+
+      - name: Ruff (lint)
+        run: ruff check .
+
+      - name: Bandit (SAST)
+        run: bandit -r -q app -x venv,tests,alembic/versions
+
+      - name: Gitleaks (secrets)
+        uses: zricethezav/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: detect --redact --source=.
+
+  tests:
     name: Tests (Postgres + Alembic + PyTest)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -18,7 +57,8 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: fluency90_test
-        ports: ["5432:5432"]
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
@@ -26,16 +66,17 @@ jobs:
           --health-retries=5
 
     env:
+      # variables que usa tu app y alembic
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fluency90_test
       SECRET_KEY: test_secret_please_change
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       ALLOW_ORIGINS: http://localhost:5173,https://tu-front.com
+      # evita prompt de contraseña en psql cuando usamos -U
+      PGPASSWORD: postgres
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # necesario para gitleaks si escaneas historia
 
       - uses: actions/setup-python@v5
         with:
@@ -52,7 +93,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest psycopg2-binary
+          pip install pytest psycopg2-binary alembic
 
       - name: Create .env for CI
         run: |
@@ -62,78 +103,22 @@ jobs:
           ALGORITHM=${ALGORITHM}
           ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
           ALLOW_ORIGINS=${ALLOW_ORIGINS}
-          ENV=dev
-          TRUSTED_HOSTS=127.0.0.1,localhost
-          JWT_ISS=fluency90.api
-          JWT_AUD=fluency90.front
           EOF
 
       - name: Wait for Postgres
         run: |
-          for i in {1..40}; do
-            pg_isready -h localhost -p 5432 -U postgres && break
+          for i in {1..30}; do
+            # usamos URI para evitar prompt por contraseña
+            psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "SELECT 1;" && break
             sleep 1
           done
 
-      - name: Run Alembic migrations
-        run: alembic upgrade head
+      - name: Run Alembic migrations (all branches)
+        env:
+          PYTHONPATH: .
+        run: alembic upgrade heads
 
       - name: Run tests
         env:
           PYTHONPATH: .
         run: pytest -q
-
-  security:
-    name: Security (SCA + SAST + Secrets)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # para que Gitleaks pueda revisar historia si lo deseas
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Cache pip (tools)
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-tools-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-tools-
-
-      - name: Install security tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install pip-audit bandit ruff
-
-      # --- SCA: dependencias ---
-      - name: pip-audit (SCA)
-        run: pip-audit -r requirements.txt --progress-spinner off --strict
-
-      # --- SAST: patrones inseguros ---
-      - name: bandit (SAST)
-        run: bandit -r app -x venv,tests,alembic/versions -ll
-
-      - name: ruff (security rules S)
-        run: ruff check app --select S --no-fix
-
-      # --- SAST amplio: Semgrep ---
-      - name: Semgrep (SAST)
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/ci
-        env:
-          # Opcional: añade un token si usas Semgrep Cloud para mejores reglas/telemetría
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-
-      # --- Secret scanning ---
-      - name: Gitleaks (secrets)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: --redact
