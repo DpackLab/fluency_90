@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    # Hacemos que Alembic y PyTest encuentren tus módulos
+    # Variables necesarias para tu app/tests
     env:
       PYTHONPATH: ${{ github.workspace }}
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fluency90_test
@@ -73,12 +73,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest psycopg2-binary alembic
-      # Mínimo necesario para usar pg_isready/psql en los pasos de espera/chequeo
-      - name: Install PostgreSQL client (psql)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y postgresql-client
 
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # (Opcional) Si tu código depende estrictamente de .env
       - name: Create .env for CI
         run: |
           cat > .env <<'EOF'
