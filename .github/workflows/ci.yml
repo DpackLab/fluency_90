@@ -1,9 +1,18 @@
-name: CI 
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   security:
@@ -11,19 +20,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v5
-        with: {python-version: "3.11"}
+        with:
+          python-version: "3.11"
+
       - name: Install linters/scanners
         run: |
           python -m pip install --upgrade pip
           pip install ruff bandit
+
       - name: Ruff (lint)
         run: ruff check .
+
       - name: Bandit (SAST)
         run: bandit -r -q app -x venv,tests,alembic/versions
+
       - name: Gitleaks (secrets)
         uses: zricethezav/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: detect --redact --source=.
 
@@ -48,16 +66,21 @@ jobs:
           --health-retries=5
 
     env:
+      # variables que usa tu app y alembic
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fluency90_test
       SECRET_KEY: test_secret_please_change
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       ALLOW_ORIGINS: http://localhost:5173,https://tu-front.com
+      # evita prompt de contraseña en psql cuando usamos -U
+      PGPASSWORD: postgres
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
-        with: {python-version: "3.11"}
+        with:
+          python-version: "3.11"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -85,15 +108,17 @@ jobs:
       - name: Wait for Postgres
         run: |
           for i in {1..30}; do
-            pg_isready -h localhost -p 5432 -U postgres && break
+            # usamos URI para evitar prompt por contraseña
+            psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "SELECT 1;" && break
             sleep 1
           done
-          psql "postgresql://postgres:postgres@localhost:5432/fluency90_test" -c "SELECT 1;"
 
       - name: Run Alembic migrations
-        env: { PYTHONPATH: . }
+        env:
+          PYTHONPATH: .
         run: alembic upgrade head
 
       - name: Run tests
-        env: { PYTHONPATH: . }
+        env:
+          PYTHONPATH: .
         run: pytest -q
