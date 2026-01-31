@@ -59,7 +59,6 @@ def has_output_today(db: DBSession, user_id: int, user_tz: str | None) -> bool:
 
     return row is not None
 
-
 def evaluate_progress_state(
     db: DBSession,
     user_id: int,
@@ -67,38 +66,68 @@ def evaluate_progress_state(
     *,
     active_today: bool,
     blocked_without_output: bool,
+    endpoint_path: str | None = None,
+    request_id: str | None = None,
 ) -> ProgressDecision:
+
     """
     Política canónica (Semana 7 Día 3):
     - Compatibilidad / verdad mínima: si blocked_without_output=True, bloquear.
     - Regla real: bloquear si active_today=True y no hay output hoy.
     - En cualquier otro caso, permitir.
     """
+
     today = _today_for_tz(user_tz)
     has_out = has_output_today(db=db, user_id=user_id, user_tz=user_tz)
 
     if blocked_without_output:
-        return ProgressDecision(
+        decision = ProgressDecision(
             allowed=False,
             reason="Output requerido para continuar",
             has_output_today=has_out,
             today=today,
             signals_used=["daily_state.blocked_without_output"],
         )
-
-    if active_today and (not has_out):
-        return ProgressDecision(
+    elif active_today and (not has_out):
+        decision = ProgressDecision(
             allowed=False,
             reason="Output requerido para continuar",
             has_output_today=False,
             today=today,
             signals_used=["active_today", "has_output_today"],
         )
+    else:
+        decision = ProgressDecision(
+            allowed=True,
+            reason=None,
+            has_output_today=has_out,
+            today=today,
+            signals_used=["allow"],
+        )
 
-    return ProgressDecision(
-        allowed=True,
-        reason=None,
-        has_output_today=has_out,
-        today=today,
-        signals_used=["allow"],
-    )
+    # Semana 8 Día 1 — Observabilidad del motor (best-effort)
+    # Nota: hoy el event_type puede no existir (permiso denegado para insertarlo).
+    # En ese caso, event_log_service dejará evidencia en stderr como SKIPPED.
+    try:
+        from fluency90.services.event_log_service import log_event
+
+        log_event(
+            db=db,
+            event_type="progress_decision_evaluated",
+            user_id=user_id,
+            meta={
+                "source": "decision_engine",
+                "path": endpoint_path,
+                "request_id": request_id,
+                "allowed": decision.allowed,
+                "reason": decision.reason,
+                "today": decision.today,
+                "has_output_today": decision.has_output_today,
+                "signals_used": decision.signals_used,
+            },
+        )
+    except Exception:
+        pass
+
+    return decision
+
