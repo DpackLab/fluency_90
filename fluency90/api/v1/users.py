@@ -24,53 +24,6 @@ from fluency90.services.daily_state_service import get_user_daily_state
 
 from uuid import uuid4
 
-def _can_progress_from_decision(decision) -> tuple[bool, str]:
-    """
-    Compatibilidad:
-    - Nuevo: DailyDecision(can_progress, reason, ...)
-    - Viejo tests: Decision(allowed, reason, ...)
-    """
-    if decision is None:
-        return True, ""
-    if hasattr(decision, "can_progress"):
-        return bool(decision.can_progress), getattr(decision, "reason", "") or ""
-    if hasattr(decision, "allowed"):
-        return bool(decision.allowed), getattr(decision, "reason", "") or ""
-    return True, ""
-
-def _evaluate_progress_state_from_state(state):
-    """
-    Política real de progreso diario.
-    Decide SOLO con señales de estado, no persiste, no conoce endpoints.
-    """
-
-    class Decision:
-        def __init__(self, allowed: bool, reason: str):
-            self.allowed = allowed
-            self.reason = reason
-
-    # Señales mínimas esperadas en state
-    active_today = bool(getattr(state, "active_today", False))
-    has_output_today = bool(getattr(state, "has_output_today", False))
-    blocked_without_output = bool(getattr(state, "blocked_without_output", False))
-
-    # ✅ Compatibilidad / verdad mínima:
-    # si daily_state ya marcó bloqueo, no necesitamos más señales.
-    if blocked_without_output:
-        return Decision(
-            allowed=False,
-            reason="Output requerido para continuar",
-        )
-
-    # ✅ Regla real (cuando existan señales completas):
-    if active_today and not has_output_today:
-        return Decision(
-            allowed=False,
-            reason="Output requerido para continuar",
-        )
-
-    return Decision(allowed=True, reason="")
-
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
