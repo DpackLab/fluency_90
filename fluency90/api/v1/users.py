@@ -18,7 +18,8 @@ from fluency90.services.user_stats_service import get_user_me_stats
 from fluency90.services.event_log_service import log_event
 from fluency90.services.user_service import create_user as create_user_service
 from fluency90.services.active_day_service import mark_user_active_today
-from fluency90.services.progress_policy_service import evaluate_progress_state as evaluate_progress_policy
+
+from fluency90.services.progress_policy_service import decision_from_state
 from fluency90.services.daily_state_service import get_user_daily_state
 
 from uuid import uuid4
@@ -210,12 +211,11 @@ def read_current_user_stats(
 
     # 2) Política real (decision engine)
 
-    decision = evaluate_progress_policy(
+    decision = decision_from_state(
         db=db,
         user_id=current_user.id,
         user_tz=user_tz,
-        active_today=bool(getattr(state, "active_today", False)),
-        blocked_without_output=bool(getattr(state, "blocked_without_output", False)),
+        state=state,
         endpoint_path=path,
         request_id=request_id,
     )

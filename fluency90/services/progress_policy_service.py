@@ -68,6 +68,8 @@ def evaluate_progress_state(
     blocked_without_output: bool,
     endpoint_path: str | None = None,
     request_id: str | None = None,
+    has_output_today_override: bool | None = None,
+    today_override: str | None = None,
 ) -> ProgressDecision:
 
     """
@@ -77,8 +79,10 @@ def evaluate_progress_state(
     - En cualquier otro caso, permitir.
     """
 
-    today = _today_for_tz(user_tz)
-    has_out = has_output_today(db=db, user_id=user_id, user_tz=user_tz)
+    today = today_override or _today_for_tz(user_tz)
+    has_out = has_output_today_override if has_output_today_override is not None else has_output_today(
+        db=db, user_id=user_id, user_tz=user_tz
+    )
 
     if blocked_without_output:
         decision = ProgressDecision(
@@ -131,3 +135,33 @@ def evaluate_progress_state(
 
     return decision
 
+def decision_from_state(
+    db: DBSession,
+    *,
+    user_id: int,
+    user_tz: str | None,
+    state,
+    endpoint_path: str | None = None,
+    request_id: str | None = None,
+) -> ProgressDecision:
+    """
+    Semana 8 Día 2 — Adaptador único (daily_state -> ProgressDecision)
+    Regla: el endpoint NO interpreta flags; solo pasa state.
+    """
+    # state viene de get_user_daily_state (UserDailyState)
+    today_iso = getattr(getattr(state, "date", None), "isoformat", lambda: None)()
+    has_out = bool(getattr(state, "has_output_today", False))
+    active_today = bool(getattr(state, "active_today", False))
+    blocked_without_output = bool(getattr(state, "blocked_without_output", False))
+
+    return evaluate_progress_state(
+        db=db,
+        user_id=user_id,
+        user_tz=user_tz,
+        active_today=active_today,
+        blocked_without_output=blocked_without_output,
+        endpoint_path=endpoint_path,
+        request_id=request_id,
+        has_output_today_override=has_out,
+        today_override=today_iso,
+    )
