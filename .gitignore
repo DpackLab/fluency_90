@@ -1,0 +1,23 @@
+# Secrets
+.env
+
+# Virtual environments
+venv/
+.venv/
+.venv_bak/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Backups and dumps
+_backup_*
+*.bak_*
+*.sql
+
+# Alembic backups
+alembic.ini.bak_*
+
+# OS / editor
+.DS_Store
