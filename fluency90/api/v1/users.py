@@ -21,6 +21,7 @@ from fluency90.services.active_day_service import mark_user_active_today
 
 from fluency90.services.progress_policy_service import decision_from_state
 from fluency90.services.daily_state_service import get_user_daily_state
+from fluency90.services.progress_guard_service import enforce_progress_guard
 
 from uuid import uuid4
 
@@ -155,39 +156,14 @@ def read_current_user_stats(
     user_tz = getattr(current_user, "timezone", "UTC")
     request_id = str(uuid4())
 
-    # 1) Señales (daily_state)
-    state = get_user_daily_state(
+    # 1) Guard canónico: estado + decisión (el endpoint NO decide)
+    state, decision = enforce_progress_guard(
         db=db,
         user_id=current_user.id,
         user_tz=user_tz,
-    )
-
-    # 2) Política real (decision engine)
-
-    decision = decision_from_state(
-        db=db,
-        user_id=current_user.id,
-        user_tz=user_tz,
-        state=state,
         endpoint_path=path,
-        request_id=request_id,
+        request_id=None,
     )
-
-    if not decision.allowed:
-        try:
-            log_event(
-                db=db,
-                event_type="users_blocked_without_output",
-                user_id=current_user.id,
-                meta={"source": "api", "path": path, "signals": decision.signals_used},
-            )
-        except Exception:
-            pass
-
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=decision.reason or "Output requerido para continuar",
-        )
 
     # 3) Stats solo si está permitido
     stats = get_user_me_stats(db, current_user.id, user_tz)
