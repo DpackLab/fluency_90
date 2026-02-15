@@ -109,30 +109,6 @@ def evaluate_progress_state(
             signals_used=["allow"],
         )
 
-    # Semana 8 Día 1 — Observabilidad del motor (best-effort)
-    # Nota: hoy el event_type puede no existir (permiso denegado para insertarlo).
-    # En ese caso, event_log_service dejará evidencia en stderr como SKIPPED.
-    try:
-        from fluency90.services.event_log_service import log_event
-
-        log_event(
-            db=db,
-            event_type="progress_decision_evaluated",
-            user_id=user_id,
-            meta={
-                "source": "decision_engine",
-                "path": endpoint_path,
-                "request_id": request_id,
-                "allowed": decision.allowed,
-                "reason": decision.reason,
-                "today": decision.today,
-                "has_output_today": decision.has_output_today,
-                "signals_used": decision.signals_used,
-            },
-        )
-    except Exception:
-        pass
-
     return decision
 
 def decision_from_state(
