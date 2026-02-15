@@ -44,6 +44,31 @@ def enforce_progress_guard(
         request_id=request_id,
     )
 
+    # Observabilidad canónica: siempre registramos la evaluación (best-effort).
+    # No cambia lógica ni contrato: solo deja evidencia de qué decidió el motor en el contexto del guard.
+    try:
+        log_event(
+            db=db,
+            event_type="progress_decision_evaluated",
+            user_id=user_id,
+            meta={
+                "source": "guard",
+                "path": endpoint_path,
+                "request_id": request_id,
+                "allowed": bool(getattr(decision, "allowed", False)),
+                "reason": getattr(decision, "reason", None),
+                "today": getattr(decision, "today", None),
+                "signals": getattr(decision, "signals_used", None),
+                # contexto mínimo del state (diagnóstico, no contrato público)
+                "active_today": bool(getattr(state, "active_today", False)),
+                "has_output_today": bool(getattr(state, "has_output_today", False)),
+                "blocked_without_output": bool(getattr(state, "blocked_without_output", False)),
+                "derived_state": getattr(state, "derived_state", None),
+            },
+        )
+    except Exception:
+        pass
+
     if not decision.allowed:
         # Observabilidad gobernada (best-effort)
         try:
