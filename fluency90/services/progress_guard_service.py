@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any, Tuple
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -8,32 +8,29 @@ from fluency90.services.daily_state_service import get_user_daily_state
 from fluency90.services.progress_policy_service import decision_from_state
 from fluency90.services.event_log_service import log_event
 
-
-def enforce_progress_guard(
+def evaluate_progress_guard(
     *,
     db: Session,
     user_id: int,
     user_tz: Optional[str],
     endpoint_path: str,
     request_id: Optional[str] = None,
-):
+    state: Optional[Any] = None,
+) -> Tuple[Any, Any]:
     """
-    Guard canónico de progreso.
+    Evaluación canónica (NO bloquea).
 
-    Regla:
-    - Los endpoints NO deciden.
-    - Este guard obtiene el estado, consulta el motor y actúa.
-
-    Comportamiento:
-    - Si bloquea: log_event + HTTP 409
-    - Si permite: retorna (state, decision) para uso mínimo del endpoint
+    - Obtiene state (o usa uno precomputado).
+    - Consulta motor.
+    - Registra observabilidad canónica (best-effort).
+    - Retorna (state, decision).
     """
-
-    state = get_user_daily_state(
-        db=db,
-        user_id=user_id,
-        user_tz=user_tz or "UTC",
-    )
+    if state is None:
+        state = get_user_daily_state(
+            db=db,
+            user_id=user_id,
+            user_tz=user_tz or "UTC",
+        )
 
     decision = decision_from_state(
         db=db,
@@ -45,7 +42,6 @@ def enforce_progress_guard(
     )
 
     # Observabilidad canónica: siempre registramos la evaluación (best-effort).
-    # No cambia lógica ni contrato: solo deja evidencia de qué decidió el motor en el contexto del guard.
     try:
         log_event(
             db=db,
@@ -68,6 +64,37 @@ def enforce_progress_guard(
         )
     except Exception:
         pass
+
+    return state, decision
+
+def enforce_progress_guard(
+    *,
+    db: Session,
+    user_id: int,
+    user_tz: Optional[str],
+    endpoint_path: str,
+    request_id: Optional[str] = None,
+):
+    """
+    Guard canónico de progreso.
+
+    Regla:
+    - Los endpoints NO deciden.
+    - Este guard obtiene el estado, consulta el motor y actúa.
+
+    Comportamiento:
+    - Si bloquea: log_event + HTTP 409
+    - Si permite: retorna (state, decision) para uso mínimo del endpoint
+    """
+
+    state, decision = evaluate_progress_guard(
+        db=db,
+        user_id=user_id,
+        user_tz=user_tz,
+        endpoint_path=endpoint_path,
+        request_id=request_id,
+        state=None,
+    )
 
     if not decision.allowed:
         # Observabilidad gobernada (best-effort)

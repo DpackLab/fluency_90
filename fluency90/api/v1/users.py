@@ -21,7 +21,7 @@ from fluency90.services.active_day_service import mark_user_active_today
 
 from fluency90.services.progress_policy_service import decision_from_state
 from fluency90.services.daily_state_service import get_user_daily_state
-from fluency90.services.progress_guard_service import enforce_progress_guard
+from fluency90.services.progress_guard_service import enforce_progress_guard, evaluate_progress_guard
 
 from uuid import uuid4
 
@@ -108,6 +108,14 @@ def touch_current_user(
     )
 
     # 3) Retornar stats (evita doble llamada frontend)
+    evaluate_progress_guard(
+        db=db,
+        user_id=current_user.id,
+        user_tz=getattr(current_user, "timezone", "UTC"),
+        endpoint_path=path,
+        request_id=None,
+    )
+
     return get_user_me_stats(db, current_user.id, current_user.timezone)
 
 @router.post("/me/output", response_model=OutputRead)
@@ -162,7 +170,7 @@ def read_current_user_stats(
         user_id=current_user.id,
         user_tz=user_tz,
         endpoint_path=path,
-        request_id=None,
+        request_id=request_id,
     )
 
     # 3) Stats solo si está permitido
@@ -180,6 +188,15 @@ def read_current_user_daily_state(
         db=db,
         user_id=current_user.id,
         user_tz=getattr(current_user, "timezone", "UTC"),
+    )
+
+    evaluate_progress_guard(
+        db=db,
+        user_id=current_user.id,
+        user_tz=getattr(current_user, "timezone", "UTC"),
+        endpoint_path=path,
+        request_id=None,
+        state=state,
     )
 
     # Observabilidad mínima: registramos lectura y resultado
