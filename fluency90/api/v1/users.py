@@ -23,6 +23,8 @@ from fluency90.services.progress_policy_service import decision_from_state
 from fluency90.services.daily_state_service import get_user_daily_state
 from fluency90.services.progress_guard_service import enforce_progress_guard, evaluate_progress_guard
 
+from fluency90.services.decision_audit_service import list_recent_progress_decisions
+
 from uuid import uuid4
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -226,3 +228,32 @@ def read_current_user_daily_state(
         "session_active": state.session_active,
         "session_started_at": state.session_started_at,
     }
+
+@router.get("/me/decisions")
+def read_my_progress_decisions(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Read-only: decisiones históricas del guard (event_log).
+    - NO cambia motor
+    - NO cambia guard
+    - NO bloquea: usa evaluate
+    """
+    path = "/api/v1/users/me/decisions"
+
+    # Evaluación canónica (observabilidad), sin bloqueo
+    evaluate_progress_guard(
+        db=db,
+        user_id=current_user.id,
+        user_tz=getattr(current_user, "timezone", "UTC"),
+        endpoint_path=path,
+        request_id=None,
+    )
+
+    lim = int(limit) if limit and int(limit) > 0 else 20
+    if lim > 100:
+        lim = 100
+
+    return list_recent_progress_decisions(db=db, user_id=current_user.id, limit=lim)
